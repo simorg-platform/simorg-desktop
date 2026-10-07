@@ -1,0 +1,137 @@
+Qt WebEngine: the third-party components inside it
+====================================================
+
+Qt WebEngine is built on Chromium, and Chromium carries the work of many
+projects. The list below is the one The Qt Company publishes for Qt WebEngine
+(https://doc.qt.io/qt-6/qtwebengine-licensing.html), where each entry links to
+its full licence text. The same texts are in the Qt source archive named in the
+notices above, under qtwebengine/src/3rdparty/chromium. None of the GPL-licensed
+entries is linked into or distributed with the Qt WebEngine libraries; Qt uses
+them only to reach Linux system resources.
+
+@puppeteer/replay — Apache-2.0
+@vscode/web-custom-data — MIT
+Abseil — Apache-2.0
+Acorn — MIT
+Alliance for Open Media Video Codec — Alliance-for-Open-Media-Patent, BSD-2-Clause
+Almost Native Graphics Layer Engine — BSD
+Android Explicit Synchronization — Apache-2.0
+BoringSSL — MIT, BSD-3-Clause, OpenSSL, ISC, SSLeay
+Brotli — MIT
+C++ Signal/Slot Library — Ignorable
+CRC32C — BSD-3-Clause
+CSP Evaluator Core Library — Apache-2.0
+Chromium License — BSD
+CityHash — MIT
+CodeMirror 5 — MIT
+CodeMirror 6 — MIT
+Compact Encoding Detection — Apache-2.0
+Compact Language Detector v3 — Apache-2.0
+Crashpad — Apache-2.0
+Dawn — BSD-3-Clause
+Devtools-Frontend — BSD-3-Clause
+Emoji Segmenter — Apache-2.0
+Expat XML Parser — MIT
+FP16 — MIT
+Fiat-Crypto — Apache-2.0
+FlatBuffers — Apache-2.0
+General Purpose FFT Package — LicenseRef-takuya-ooura
+Google Double Conversion — BSD-3-Clause
+Headers for the Windows 10 WebAuthn API (webauthn.dll) — MIT
+Highway: C++ library for SIMD — Apache-2.0
+Implementation of WebDriver BiDi standard — Apache-2.0
+In line A-law and u-law conversion routines — Custom license
+Ink — Apache-2.0
+Ink Stroke Modeler — Apache-2.0
+LZMA SDK — LZMA-SDK-9.22
+LevelDB — BSD-3-Clause
+Libtess2 — SGI-B-2.0
+Lighthouse — Apache-2.0
+Lighthouse i18n.js — Apache-2.0
+Lit — BSD-3-Clause
+Marked — BSD-3-Clause, MIT
+Material color utilities — Apache-2.0
+Metrics Protos — BSD-3-Clause
+NVidia Control X Extension Library — MIT
+OTS (OpenType Sanitizer) — BSD-3-Clause
+One Euro Filter — BSD-3-Clause
+PDFium — BSD
+PFFFT — pffft
+Paul Hsieh's SuperFastHash — BSD-3-Clause
+Perfetto — blessing, BSD-3-Clause, Apache-2.0
+Polymer — BSD-3-Clause
+Private Join and Compute subset — Apache-2.0
+Protocol Buffers — BSD-3-Clause
+Protocol Buffers (javascript) — BSD-3-Clause
+Puppeteer Core — Apache-2.0
+QUICHE — BSD-3-Clause
+Recurrent neural network for audio noise reduction — BSD-3-Clause
+SPIR-V Headers — Apache-2.0
+SPIR-V Tools — Apache-2.0
+Search Engines resources — BSD-3-Clause
+Selenium Atoms — Apache-2.0
+Sizzle — MIT
+Snappy — BSD-3-Clause, CC-BY-4.0, MIT, CC-BY-3.0
+Speech Dispatcher — LGPL-2.1
+The Chromium Project — BSD-3-Clause
+The Diff Match and Patch libraries — Apache-2.0
+The ITU G.722 codec — Custom license
+URI Template Parser — Apache-2.0
+URL Pattern Library — MIT
+V8 fork of fdlibm — SunPro
+Volk Meta loader for Vulkan API — MIT
+Vulkan API headers — Apache-2.0
+Vulkan Loader Components — Apache-2.0
+VulkanMemoryAllocator — MIT
+Wasmparser — Apache-2.0
+Web Vitals — Apache-2.0
+WebKit — BSD and LGPL v2 and LGPL v2.1
+WebM container parser and writer — BSD-3-Clause, Patent
+WebP image encoder/decoder — BSD-3-Clause, Patent
+WebRTC — BSD
+Wicked Good XPath — MIT
+Wuffs — Apache-2.0
+Zstandard — BSD-3-Clause
+cpuinfo — BSD-2-Clause
+d3 — ISC
+dav1d — BSD-2-Clause
+dragonbox — BSL-1.0
+fast_float — MIT
+ffmpeg — LGPL-2.1
+fft — Custom license
+flac — BSD
+fontconfig — public-domain-md5, MIT-Modern-Variant, HPND-sell-variant, MIT
+google-glog's symbolization library — BSD-3-Clause
+harfbuzz — MIT-Modern-Variant
+hunspell — MPL-1.1
+icu — MIT
+inspector protocol — BSD-3-Clause
+intl-messageformat — BSD-3-Clause
+ipcz — BSD
+json5 — MIT
+jsoncpp — JsonCPP
+legacy-javascript — Apache
+libaddressinput — Apache-2.0
+libavif — BSD-2-Clause, MIT
+libgav1 — Apache-2.0
+libpng — Libpng-2.0, Libpng
+libsrtp — BSD-3-Clause
+libvpx — BSD-3-Clause, WebM-Project-Patent
+libxml — MIT
+libxslt — X11
+libyuv — BSD-3-Clause
+minigbm — BSD-3-Clause
+mitt — MIT
+modp base64 decoder — BSD-3-Clause
+opus — Opus-Patent-BSD-3-Clause
+rapidhash — BSD-2-Clause
+re2 — BSD-3-Clause
+simdutf unicode transcoder — MIT
+source-map-scopes-codec — BSD-3-Clause
+spl sqrt floor — SPL-SQRT-FLOOR
+sqlite — blessing
+third-party-web — MIT
+woff2 — MIT
+xdg-user-dirs — MIT
+zlib — Zlib
+zod — MIT

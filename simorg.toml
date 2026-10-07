@@ -1,0 +1,120 @@
+# Simorg Desktop, as an APPLICATION artifact.
+#
+# An application runs on the person's own computer, never inside an agent's
+# container, so a release publishes one binary per operating system and each of
+# them is built by the toolchain that target needs. None of them comes out of a
+# job: a Mac bundle is made on a Mac and a Windows one on Windows, so every
+# driver here names an `archive` that is made here and sent with the upload, and
+# no `build` and no `builder`. docs/packaging.md has the commands that produce
+# each one.
+#
+# That file is the operating system's own installer, never a .tgz: a .dmg for
+# macOS, an .AppImage for Linux and an .msi for Windows, which the platform
+# checks and refuses otherwise. scripts/package-driver.sh makes it.
+#
+# The specifier this describes is `@simorg/betsalel/simorg-desktop:<tag>`.
+
+[artifact]
+slug = "simorg-desktop"
+title = "Simorg Desktop"
+type = "APPLICATION"
+
+# One instance per computer, shared by every agent that uses it: the person runs
+# it, and an agent's `"#simorg/betsalel/simorg-desktop" #sd` joins it rather than
+# starting another.
+is_singleton = true
+tagline = "Run and follow your Simorg agents on your own computer."
+
+# The paragraph on the artifact's page, above its readme.
+description = "Simorg Desktop turns a Mac, Windows or Linux computer into a machine your agents run on. Sign in once, choose the agents the computer hosts, open their Workbench and Brain in a native window, and follow their status and logs from the menu bar. For a server with no screen, Simorg CLI offers the same controls in a terminal. Free software under GPL-3.0."
+
+# Public: a download page is no use behind a login, and the catalogue row is
+# how somebody finds the app in the first place.
+visibility = "PUBLIC"
+
+# The account the agent belongs to. `kind` is USER or TEAM; the platform
+# reads the same slug namespace for both.
+[owner]
+kind = "TEAM"
+slug = "simorg"
+
+# Published under this agent, and built by it — except that nothing here is
+# built by it, because no job can produce a macOS or a Windows binary.
+[agent]
+slug = "betsalel"
+
+[release]
+tag = "0.1.0"
+notes = "First release: run and follow your Simorg agents on your own computer. Choose the agents it hosts, open their Workbench and Brain in a native window, follow their status and logs, and see what they write to you."
+keywords = [
+  "platform", "tray", "link-local", "macos", "windows", "linux", "qt",
+  "direct-download", "personal", "team", "hosts-components", "os-access",
+  "autostart", "stateful", "platform-client", "agents",
+]
+
+# The artifact page's link to the sources. Published there, one way, by the
+# Publish Simorg Desktop's source workflow; each version is tagged v<tag>.
+source_link = "https://github.com/simorg-platform/simorg-desktop"
+
+# The fields an agent may use, as `$name` tokens: what this release answers.
+#
+# `userLog`: a line the agent's program writes into its own log in this app, in
+# the information colour. src/appmodel/src/DesktopPeer.cpp declares the same, and
+# the two say the same thing. A field declared here is a promise the binary
+# keeps, so a field is declared in the release that implements it.
+simorg_initialization_script = """
+$userLog
+"""
+
+# The engines this release works with: every engine below 1.0.0, so a patch
+# or a minor engine runs it. Named here because a prebuilt driver has no
+# builder to name it.
+[engine]
+version = "^0"
+
+# The targets. One [[driver]] per binary: every target this version ships,
+# named from the start. They are built on different computers and do not all
+# arrive together, so the tag is published with the archives that exist and
+# the rest are added to that same tag later — never replacing one it already
+# carries.
+#
+# `scripts/build-driver.sh` makes the ones the computer it runs on can make
+# (`--codes` lists them), and Simorg's release tooling calls it for those not
+# built yet, built at another tag, or built from a commit this app has changed
+# since —
+# the same command everywhere, so a Mac makes the first four and a Windows
+# computer, in Git Bash, makes the last two:
+#
+# | Driver code                | Built by                                     |
+# | -------------------------- | -------------------------------------------- |
+# | BINARY_MAC_APPLE_SILICON   | on a Mac: one universal build against the    |
+# | BINARY_MAC_X64             | pinned Qt, thinned to each architecture      |
+# | BINARY_LINUX_ARM           | docker/Dockerfile.linux-build, natively on   |
+# |                            | Apple silicon                                |
+# | BINARY_LINUX_X64           | the same, in a Colima VM running x86-64      |
+# |                            | through Rosetta                              |
+# | BINARY_WINDOWS_X64         | on Windows: scripts/build-windows.ps1 through |
+# | BINARY_WINDOWS_ARM         | PowerShell, ARM64 cross-compiled from Intel  |
+[[driver]]
+code = "BINARY_MAC_APPLE_SILICON"
+archive = "release/BINARY_MAC_APPLE_SILICON/simorg-desktop-macos-arm64.dmg"
+
+[[driver]]
+code = "BINARY_MAC_X64"
+archive = "release/BINARY_MAC_X64/simorg-desktop-macos-x64.dmg"
+
+[[driver]]
+code = "BINARY_LINUX_ARM"
+archive = "release/BINARY_LINUX_ARM/simorg-desktop-linux-aarch64.AppImage"
+
+[[driver]]
+code = "BINARY_LINUX_X64"
+archive = "release/BINARY_LINUX_X64/simorg-desktop-linux-x86_64.AppImage"
+
+[[driver]]
+code = "BINARY_WINDOWS_X64"
+archive = "release/BINARY_WINDOWS_X64/simorg-desktop-windows-x64.msi"
+
+[[driver]]
+code = "BINARY_WINDOWS_ARM"
+archive = "release/BINARY_WINDOWS_ARM/simorg-desktop-windows-arm64.msi"

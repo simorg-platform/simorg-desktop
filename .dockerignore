@@ -1,0 +1,10 @@
+build/
+build-*/
+install/
+release/
+.git/
+.github/
+*.md
+.vscode/
+.idea/
+.DS_Store

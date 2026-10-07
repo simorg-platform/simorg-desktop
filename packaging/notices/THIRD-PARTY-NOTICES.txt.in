@@ -1,0 +1,39 @@
+Third-party notices for Simorg Desktop
+======================================
+
+Simorg Desktop is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version. The licence is in the file LICENSE beside
+this one, and the source code is published at
+https://github.com/simorg-platform/simorg-desktop.
+
+It is built with the components below, each the work of its authors under
+the licence named with it. Where a licence asks for its text to travel with
+the program, the text follows.
+
+Qt @QT_VERSION_LINE@ — GNU Lesser General Public License, version 3
+----------------------------------------------------------------------
+Copyright (C) The Qt Company Ltd. and other contributors.
+
+Simorg uses these Qt modules: @QT_MODULES_LINE@. Each is linked dynamically —
+the Qt libraries are separate files beside the program — so you can replace
+them with a modified Qt and run the program with it, as the LGPL provides.
+The complete corresponding source code of this version of Qt is published by
+The Qt Company at
+https://download.qt.io/official_releases/qt/@QT_VERSION_SERIES@/@QT_VERSION_LINE@/single/
+and is available from Simorg on request at info@simorg.tech. Qt is a
+trademark of The Qt Company Ltd. Some Qt modules carry third-party
+components of their own; their notices are in the Qt source archive under each
+module's src/3rdparty directory.
+
+The text of the GNU Lesser General Public License, version 3, follows the
+notices below, and the GNU General Public License it supplements is in the
+file LICENSE.
+@WEBENGINE_SECTION@
+@LINUX_SECTION@
+======================================================================
+GNU LESSER GENERAL PUBLIC LICENSE, version 3
+======================================================================
+
+@LGPL_TEXT@

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Simorg
+GenericName=Simorg Platform Client
+Comment=Agents, artifacts and machines from your desktop
+Exec=simorg-desktop
+Icon=tech.simorg.desktop
+Terminal=false
+Categories=Development;Network;
+Keywords=simorg;agents;artifacts;platform;
+StartupNotify=true
+StartupWMClass=simorg-desktop
+X-GNOME-UsesNotifications=true

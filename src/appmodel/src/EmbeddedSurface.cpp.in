@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Simorg
+//
+// GENERATED FILE — edit config/surface/host.html or config/surface/host.js
+// instead. CMake regenerates this whenever either of them changes.
+
+#include "EmbeddedSurface.h"
+
+namespace simorg::app {
+namespace {
+
+// Bytes, not string literals, because MSVC caps a literal at about 16 KB. Each
+// ends in a 0 the size leaves out, so constData() is still a C string.
+const unsigned char kSurfaceDocument[] = {
+@SIMORG_EMBEDDED_SURFACE_HTML@0x00
+};
+
+const unsigned char kSurfaceScript[] = {
+@SIMORG_EMBEDDED_SURFACE_JS@0x00
+};
+
+QByteArray embedded(const unsigned char *bytes, qsizetype size)
+{
+    return QByteArray::fromRawData(reinterpret_cast<const char *>(bytes), size - 1);
+}
+
+} // namespace
+
+QByteArray embeddedSurfaceDocument()
+{
+    return embedded(kSurfaceDocument, sizeof(kSurfaceDocument));
+}
+
+QByteArray embeddedSurfaceScript()
+{
+    return embedded(kSurfaceScript, sizeof(kSurfaceScript));
+}
+
+} // namespace simorg::app

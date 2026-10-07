@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Simorg
+#
+# The line between what a Simorg bundle carries and what it asks the machine
+# for. Read by scripts/bundle-linux.sh, which copies everything *not* matched
+# here, and by scripts/verify-linux-bundle.sh, which treats a match as expected
+# and anything else as a hole.
+#
+# One glob per line, matched against a library's soname. Blank lines and #
+# comments are ignored.
+#
+# A glob may be followed by the word `fallback`: the machine's copy is still the
+# one that has to win, but not every machine the bundle runs on has one — WSL's
+# Ubuntu, a server reached over ssh -X, a minimal install. The bundler then
+# also carries the library in lib/fallback/<soname>/, and the launchers put
+# that directory in front of the loader only when the loader knows no copy of
+# its own; where it does, nothing changes.
+#
+# The rule for adding a line is narrow. A library belongs to the host only when
+# the host loads its own copy of it into this process anyway — because then two
+# copies under one soname is the problem, and the driver's needs decide which
+# copy has to win — or when it is the kernel-, driver- or policy-facing side of
+# something.
+#
+# Everything else is bundled, including several libraries other projects leave
+# out: ICU, PCRE2, OpenSSL, glib, fontconfig, FreeType, HarfBuzz, D-Bus, zlib,
+# libpng. Nothing on a target loads its own copy of those into a Qt process, so
+# carrying them is safe — and each one is a package somebody would otherwise
+# have had to install before the app would start.
+
+# --- The loader and the C library. A program cannot bring its own. -----------
+ld-linux*.so*
+ld.so*
+linux-vdso.so*
+linux-gate.so*
+libc.so.*
+libm.so.*
+libdl.so.*
+libpthread.so.*
+librt.so.*
+libresolv.so.*
+libutil.so.*
+libnsl.so.*
+libanl.so.*
+libmvec.so.*
+libBrokenLocale.so.*
+libthread_db.so.*
+libnss_*.so*
+libcrypt.so.*
+
+# --- The C++ runtime ---------------------------------------------------------
+# The host's Mesa drivers are loaded into this process and link this too, so the
+# copy that wins has to be new enough for them — which is the host's, always.
+libstdc++.so.*
+libgcc_s.so.*
+
+# --- Graphics ----------------------------------------------------------------
+# These *are* the driver. libGL dispatches into a vendor library compiled
+# against this kernel's DRM, and a bundled one would dispatch into nothing.
+libGL.so.*
+libGLX.so.*
+libGLdispatch.so.*
+libGLESv*.so*
+libEGL.so.*
+libOpenGL.so.*
+libglapi.so.*
+libgbm.so.*
+libdrm*.so*
+libvulkan.so.*
+
+# --- The display protocol libraries ------------------------------------------
+# Mesa links these, so bundling them is the two-copies-one-soname problem in its
+# sharpest form: the driver would be handed ours and go looking for a symbol
+# only a newer libxcb has.
+#
+# From xcb that is libxcb itself and exactly the extensions below, measured from
+# Mesa's GL, EGL, GBM, DRI and Vulkan libraries on Ubuntu 22.04 and 24.04 and
+# Debian 12 and 13. The rest of the family is bundled: the
+# xcb-util libraries (cursor, icccm, image, keysyms, render-util, util) and the
+# extensions only a toolkit uses (render, shape, xkb). No driver loads them, so
+# they are Qt's alone, and a machine does not have them just because it has a
+# desktop: Ubuntu 22.04 and WSL do not install libxcb-cursor0, and Qt 6.5 and
+# later will not open a window on X11 without it.
+libX11.so.*
+libX11-xcb.so.*
+libxcb.so.*
+libxcb-dri2.so.*
+libxcb-dri3.so.*
+libxcb-glx.so.*
+libxcb-present.so.*
+libxcb-randr.so.*
+libxcb-shm.so.*
+libxcb-sync.so.*
+libxcb-xfixes.so.*
+libXau.so.*
+libXdmcp.so.*
+libXext.so.*
+libXrender.so.*
+libXi.so.*
+libXrandr.so.*
+libXfixes.so.*
+libXcursor.so.*
+libXinerama.so.*
+libXtst.so.*
+libXss.so.*
+libXcomposite.so.*
+libXdamage.so.*
+libSM.so.*
+libICE.so.*
+libxshmfence.so.*
+libwayland-*.so*
+
+# --- Sound -------------------------------------------------------------------
+# The running desktop owns these, and the version that matches its socket is its
+# own. Nothing in Simorg plays audio itself; the web pages agent surfaces draw
+# can, and Qt WebEngine's Chromium plays through ALSA alone.
+#
+# ALSA is the host's for a subtler reason: it reaches PulseAudio and PipeWire
+# through plugins the sound server installs, which it opens from a directory
+# compiled into it — /usr/lib/<triplet>/alsa-lib on Debian, /usr/lib64/alsa-lib
+# on Fedora — and which are built against the machine's own libasound. A copy
+# from the Debian build image finds no plugin on Fedora, where every page then
+# plays nothing (measured on Fedora 42). Only libQt6WebEngineCore
+# links it, but it links it, so a machine without one — WSL, a server — could
+# not start the app at all: hence the fallback.
+libasound.so.*  fallback
+libpulse*.so*
+libjack*.so*
+
+# --- Kernel- and policy-facing -----------------------------------------------
+# A bundled copy would be asking this kernel questions in last release's dialect.
+libsystemd.so.*
+libudev.so.*
+libselinux.so.*
+libcap.so.*
+libcap-ng.so.*
+libapparmor.so.*

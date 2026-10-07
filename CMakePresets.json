@@ -1,0 +1,74 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/build/${presetName}/install",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Development (Debug, dev endpoints, tests)",
+      "description": "Debug build. Defaults to the dev environment, so it talks to localhost:10000.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "SIMORG_BUILD_TESTS": "ON",
+        "SIMORG_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (prod endpoints)",
+      "description": "Optimised build for the machine it is compiled on.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "package",
+      "displayName": "Release + bundled Qt (for distribution)",
+      "description": "Everything a machine without Qt needs, ready for `--target package`.",
+      "inherits": "release",
+      "cacheVariables": {
+        "SIMORG_DEPLOY_QT": "ON"
+      }
+    },
+    {
+      "name": "macos-universal",
+      "displayName": "macOS universal (Apple silicon + Intel)",
+      "description": "One bundle that runs natively on both. Needs a universal Qt build.",
+      "inherits": "package",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "13.0"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "package", "configurePreset": "package" },
+    { "name": "macos-universal", "configurePreset": "macos-universal" }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    }
+  ]
+}

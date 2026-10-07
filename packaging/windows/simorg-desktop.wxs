@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (C) 2026 Simorg
+
+  Simorg Desktop's Windows installer: the driver the platform publishes for
+  BINARY_WINDOWS_X64 and BINARY_WINDOWS_ARM. Built by scripts/package-driver.sh
+  with WiX Toolset 5 and its UI extension on the Windows computer:
+
+    wix build packaging\windows\simorg-desktop.wxs -arch x64 -ext WixToolset.UI.wixext
+        -d Version=<simorg.toml's tag> -d Entry=simorg-desktop.exe
+        -bindpath App=<the bundle build-windows.ps1 left> -o simorg-desktop-windows-x64.msi
+
+  Installed for the person, never for the machine: under their own
+  %LocalAppData%\Programs\Simorg, with no administrator's password, which is
+  also what lets the machine service unpack the same file for an agent with
+  `msiexec /a` and Simorg Desktop update itself without a prompt.
+
+  The UpgradeCode never changes: it is how a newer version finds the one it
+  replaces. Change it and every update installs beside the old copy instead.
+
+  Per-person files under %LocalAppData% are what the ICE38, ICE64 and ICE91
+  checks warn about, because they were written for per-machine packages; the
+  package is validated with those three suppressed and no others.
+
+  What a person sees
+  ==================
+
+  Opened from Downloads, a wizard: Welcome, Ready to install, the progress bar,
+  and a last page that says where Simorg is and has "Open Simorg now" ticked.
+  Without pages Windows shows only its own bare progress bar for a few seconds
+  and closes it, nothing opens, and the only way to find out whether anything
+  happened is to search the Start menu.
+
+  The pages only appear when the installer is opened with its full interface.
+  Simorg Desktop's own update runs it with /qb! (config/update/desktop-handover.ps1)
+  and opens the new version itself, and the machine service unpacks it with
+  /a, so neither sees a page or starts a second copy.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="Simorg Desktop"
+      Manufacturer="Simorg Oy"
+      Version="$(Version)"
+      UpgradeCode="C307B93B-59EA-4BCE-B1B9-AF66E6EE343C"
+      Scope="perUser"
+      Compressed="yes">
+
+    <MajorUpgrade
+        AllowSameVersionUpgrades="yes"
+        DowngradeErrorMessage="A newer version of Simorg Desktop is already installed. Uninstall it first to go back to this one." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      The application icon (scripts/make-icons.sh draws it), for Apps and
+      Features and the Start menu. The programs carry the same icon as a
+      resource; the shortcut names this copy anyway, so an update from a
+      version whose program had none is not shown Windows' cached blank one.
+    -->
+    <Icon Id="simorg.ico" SourceFile="$(sys.SOURCEFILEDIR)simorg.ico" />
+    <Property Id="ARPPRODUCTICON" Value="simorg.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://simorg.tech" />
+    <Property Id="ARPHELPLINK" Value="https://simorg.tech" />
+    <!-- Nothing to change once installed: Apps and Features offers Uninstall, and Repair here. -->
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="UserPrograms" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Simorg" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Everything the bundle holds, exactly as build-windows.ps1 left it. -->
+    <ComponentGroup Id="App" Directory="INSTALLFOLDER">
+      <Files Include="!(bindpath.App)\**" />
+    </ComponentGroup>
+
+    <!--
+      The Start-menu entry. Nothing goes on the person's PATH: the terminal
+      command is Simorg CLI's, an application of its own, and the PATH entry an
+      older release added goes with it as this one replaces it. A per-person
+      component needs a registry value under HKCU as its key path.
+    -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenu" Guid="4E2B9A55-1C3F-4F0A-9D6B-6C2E8A7B1D11">
+        <Shortcut
+            Id="SimorgShortcut"
+            Name="Simorg"
+            Description="Run and follow your Simorg agents on your own computer."
+            Target="[INSTALLFOLDER]$(Entry)"
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="simorg.ico"
+            IconIndex="0" />
+        <RegistryValue
+            Root="HKCU"
+            Key="Software\Simorg\Desktop"
+            Name="Installed"
+            Type="integer"
+            Value="1"
+            KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main">
+      <ComponentGroupRef Id="App" />
+      <ComponentRef Id="StartMenu" />
+    </Feature>
+
+    <!-- ================================================================ -->
+    <!-- The wizard                                                       -->
+    <!-- ================================================================ -->
+
+    <!-- The pictures on its pages, drawn from the same icon (scripts/make-icons.sh). -->
+    <WixVariable Id="WixUIDialogBmp" Value="$(sys.SOURCEFILEDIR)installer-dialog.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(sys.SOURCEFILEDIR)installer-banner.bmp" />
+
+    <!--
+      The last page: where Simorg went, since it opens beside the clock rather
+      than as a big window, and the box that opens it, ticked. ExitDialog shows
+      both only for an install or an upgrade (NOT Installed), never after a
+      repair or an uninstall.
+    -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+              Value="Simorg is in your Start menu, and once it is open you will find it in the notification area next to the clock." />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open Simorg now" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+
+    <!--
+      Opens the program the wizard just installed, from the wizard's own
+      process: that is the person's session and their account, as it has to
+      be for a per-person app, and it does not wait for Simorg to close.
+    -->
+    <CustomAction
+        Id="OpenSimorg"
+        Directory="INSTALLFOLDER"
+        ExeCommand="&quot;[INSTALLFOLDER]$(Entry)&quot;"
+        Return="asyncNoWait" />
+
+    <UI Id="SimorgWizard">
+      <!-- Windows' own face, at the sizes WixUI's pages are laid out for. -->
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="WelcomeDlg" />
+      <DialogRef Id="VerifyReadyDlg" />
+      <DialogRef Id="MaintenanceWelcomeDlg" />
+      <DialogRef Id="MaintenanceTypeDlg" />
+
+      <!--
+        First install and upgrade: Welcome, then Ready to install. There is
+        nothing to choose — where it goes is the person's own Programs folder,
+        and the licence (GPL-3.0) asks for no acceptance — so no page asks.
+      -->
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="1" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed" />
+
+      <!-- The same package opened again: Repair or Remove. -->
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+
+      <!-- Finish opens Simorg when the box is ticked, then closes the wizard. -->
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenSimorg" Order="1"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+    </UI>
+
+    <UIRef Id="SimorgWizard" />
+    <UIRef Id="WixUI_Common" />
+  </Package>
+</Wix>

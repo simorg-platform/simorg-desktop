@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  SPDX-License-Identifier: GPL-3.0-or-later
+  Copyright (C) 2026 Simorg
+
+  The document a Workbench or a Brain actually loads.
+
+  Not the engine. The engine is the iframe inside this, and this is the *host*
+  above it — the same role Simorg's web panel plays for the same renderer, and
+  the same protocol. It exists because an engine cannot be the top-level page: it
+  posts its half of the conversation to `window.parent`, and a top-level
+  document's parent is itself.
+
+  Served by `SurfaceRouter` over `simorg-surface://`, with __SURFACE_CONFIG__
+  replaced by what `AgentSurfaceService` resolved. Baked in rather than fetched:
+  a document that arrives complete cannot be seen half-configured, and there is
+  no second request to fail.
+
+  The ground is painted here, before anything is fetched, from the mode the
+  application is already in. Without it a dark window shows a white rectangle
+  for as long as the engine and its theme take to download.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simorg surface</title>
+<style>
+  html { color-scheme: __SURFACE_COLOR_SCHEME__; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: Canvas;
+    color: CanvasText;
+    font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  #surface-frame {
+    display: block;
+    border: 0;
+    width: 100%;
+    height: 100%;
+  }
+  /*
+    Said only when there is nothing else to say. The engine draws its own
+    notices for anything it can report itself; this covers the two states it
+    cannot, because in both of them there is no engine — nothing resolved, and
+    a frame that loaded and never spoke.
+  */
+  #surface-notice {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    background: Canvas;
+  }
+  #surface-notice[data-shown="1"] { display: flex; }
+  #surface-notice p { margin: 0; max-width: 460px; opacity: 0.7; }
+</style>
+</head>
+<body>
+<div id="surface-notice"><p id="surface-notice-text"></p></div>
+<script type="application/json" id="surface-config">__SURFACE_CONFIG__</script>
+<script src="host.js"></script>
+</body>
+</html>

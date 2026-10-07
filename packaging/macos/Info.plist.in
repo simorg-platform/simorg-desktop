@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Simorg -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>
+    <key>CFBundleDisplayName</key>
+    <string>Simorg</string>
+    <key>CFBundleExecutable</key>
+    <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
+    <key>CFBundleIdentifier</key>
+    <string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>${MACOSX_BUNDLE_ICON_FILE}</string>
+    <key>CFBundleShortVersionString</key>
+    <string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
+    <key>CFBundleVersion</key>
+    <string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Simorg. Licensed GPL-3.0-or-later.</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <!--
+      A normal foreground app: Dock icon, and an application menu next to the
+      Apple menu. Simorg still runs in the background with every window closed
+      — that is what the status-bar item and setQuitOnLastWindowClosed(false)
+      are for — but hiding it from the Dock as well left people with no
+      familiar way to reach it or to quit.
+    -->
+    <key>LSUIElement</key>
+    <false/>
+
+    <!--
+      Why Simorg is asking, in the words macOS puts in the prompt.
+
+      These are not optional politeness. An agent is given folders by the person
+      who owns them, and this application checks each one is there and readable
+      before it hands the path to Docker — see AccessGrants::validate and
+      AccessMounts. On a Mac that read is what trips the Files and Folders
+      permission, so somebody granting an agent access to their Documents gets a
+      system prompt naming Simorg. Without a string here the prompt explains
+      nothing, and an unexplained request for the Documents folder is one a
+      sensible person denies.
+
+      Answering "Don't Allow" is recoverable: System Settings → Privacy &
+      Security → Files and Folders. The app cannot re-ask.
+    -->
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Simorg asks before giving an agent a folder. This is for a folder in Documents that you chose to share with one.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Simorg asks before giving an agent a folder. This is for a folder on your Desktop that you chose to share with one.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Simorg asks before giving an agent a folder. This is for a folder in Downloads that you chose to share with one.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Simorg asks before giving an agent a folder. This is for a folder on a disk you connected that you chose to share with one.</string>
+    <key>NSNetworkVolumesUsageDescription</key>
+    <string>Simorg asks before giving an agent a folder. This is for a folder on a network share that you chose to share with one.</string>
+</dict>
+</plist>

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# The style simorgm and simorg-cli share, so the app and the service it is a
+# front end of read alike.
+#
+# Based on LLVM, not WebKit: simorgm, simorg-desktop and simorg-cli are written
+# with LLVM's braced lists ({a, b}), operators at the end of a line,
+# continuations aligned to the bracket and no indent inside a namespace, which
+# WebKit does the other way round.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+ColumnLimit: 118
+IndentWidth: 4
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  AfterEnum: false
+  AfterControlStatement: false
+  BeforeElse: false
+  BeforeCatch: false
+PointerAlignment: Right
+SortIncludes: CaseSensitive
+SpaceAfterTemplateKeyword: false
+Standard: c++17

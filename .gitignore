@@ -1,0 +1,20 @@
+# Build output. `build/dist/` is release artifacts and `build/targets/` is the
+# intermediate trees scripts/build-targets.sh works in — both under build/.
+build/
+build-*/
+cmake-build-*/
+install/
+*.user
+
+# Qt / CMake generated
+CMakeUserPresets.json
+compile_commands.json
+.cache/
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+
+# Editors
+.vscode/
+.idea/
+.DS_Store

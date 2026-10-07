@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Simorg
+//
+// GENERATED FILE — edit config/update/desktop-handover.sh or
+// config/update/desktop-handover.ps1 instead. CMake regenerates this whenever
+// either of them changes.
+
+#include "EmbeddedHandover.h"
+
+namespace simorg::app {
+namespace {
+
+// Bytes, not string literals, because MSVC caps a literal at about 16 KB. Each
+// ends in a 0 the size leaves out, so constData() is still a C string.
+const unsigned char kHandoverShell[] = {
+@SIMORG_EMBEDDED_HANDOVER_SH@0x00
+};
+
+const unsigned char kHandoverPowerShell[] = {
+@SIMORG_EMBEDDED_HANDOVER_PS1@0x00
+};
+
+QByteArray embedded(const unsigned char *bytes, qsizetype size)
+{
+    return QByteArray::fromRawData(reinterpret_cast<const char *>(bytes), size - 1);
+}
+
+} // namespace
+
+QByteArray embeddedHandoverShell()
+{
+    return embedded(kHandoverShell, sizeof(kHandoverShell));
+}
+
+QByteArray embeddedHandoverPowerShell()
+{
+    return embedded(kHandoverPowerShell, sizeof(kHandoverPowerShell));
+}
+
+} // namespace simorg::app

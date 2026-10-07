@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<component type="desktop-application">
+  <id>tech.simorg.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>Simorg</name>
+  <summary>Agents, artifacts and machines from your desktop</summary>
+
+  <description>
+    <p>
+      The Simorg desktop client. It sits in your system tray, keeps you signed
+      in to the Simorg platform, and ships with a `simorg` command for the same
+      work from a terminal.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">tech.simorg.desktop.desktop</launchable>
+  <url type="homepage">https://simorg.tech</url>
+
+  <provides>
+    <binary>simorg</binary>
+    <binary>simorg-desktop</binary>
+  </provides>
+
+  <content_rating type="oars-1.1"/>
+</component>

@@ -1,0 +1,296 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Simorg
+#
+# Linux release artifacts, for whichever architecture buildx is pointed at.
+#
+# This is a *build* image, not a runtime one: nothing is meant to run from it.
+# The final stage is `scratch` holding a tarball, so `--output type=local`
+# extracts the artifacts onto the host without a container ever starting.
+#
+# Driven by scripts/build-targets.sh, which picks the base image for each
+# architecture and, on an Apple silicon Mac, runs x86-64 in a Colima VM of its
+# own with Rosetta. By hand:
+#
+#   docker buildx build --platform linux/arm64 \
+#       -f docker/Dockerfile.linux-build \
+#       --build-arg BASE_IMAGE=ubuntu:24.04@sha256:… \
+#       --build-arg BUILD_TYPE=Release \
+#       --output type=local,dest=build/dist/linux-arm64 .
+#
+# Build each architecture on its own kind of processor, or through Rosetta.
+# Under QEMU, which is what buildx falls back to, GCC crashes compiling this
+# project for x86-64 on an Apple silicon Mac.
+#
+# --- What comes out, and why it looks like that -------------------------------
+#
+# One self-contained directory, archived. It carries Qt, Qt's plugins, Qt's QML
+# modules, Qt WebEngine and every third-party library underneath them, and it
+# runs on a machine where none of that is installed. That is the whole point of
+# the bundle stage below; before it existed this file shipped two ELF binaries
+# and the first thing anybody saw on an otherwise clean machine was
+#
+#   ./simorg-desktop: error while loading shared libraries: libQt6WebSockets.so.6
+#
+# --- Why the base image differs by architecture -------------------------------
+#
+# A binary asks for the C library by version, and a system whose glibc is older
+# than the newest version any file names refuses it before a line runs: the C
+# library is the one library a program cannot bring with it. Each architecture
+# is built on the oldest system Qt's own build for it allows:
+#
+#   x86-64  debian:12-slim   Qt's build needs glibc 2.34; Debian 12 has 2.36
+#   arm64   ubuntu:24.04     Qt's build is made on Ubuntu 24.04, and its
+#                            WebEngine needs glibc 2.38; Debian 12 cannot load it
+#
+# BASE_IMAGE below is the x86-64 one; scripts/build-targets.sh passes the arm64
+# one, and --base-image overrides both.
+#
+# --- Why it still runs on an older system -------------------------------------
+#
+# The build machine is not the floor. scripts/bundle-linux.sh --glibc-floor
+# rewrites, with polyfill-glibc, the handful of references that ask for more
+# than GLIBC_FLOOR and GLIBCXX_FLOOR below, so both architectures run on
+# Ubuntu 22.04, Debian 12 and Raspberry Pi OS bookworm (64-bit), and on
+# everything newer. Without it the arm64 AppImage does nothing on a Raspberry
+# Pi: Raspberry Pi OS bookworm has glibc 2.36, and the arm64 Qt names 2.38. The first check below runs on FLOOR_IMAGE, the floor system itself, so
+# no archive leaves that does not start there.
+
+# Pinned by digest (Debian 12.15); scripts/build-targets.sh
+# passes the same value.
+ARG BASE_IMAGE=debian:12-slim@sha256:3783cc01769c7b2b1b83a5c5ad96c815348e28ed7da68e2e3687004faa906251
+ARG BUILD_TYPE=Release
+ARG VERSION=0.0.0
+
+# The oldest system an archive runs on, for both architectures: Ubuntu 22.04's
+# glibc and GCC 12's C++ runtime, which Debian 12 and Raspberry Pi OS bookworm
+# share. FLOOR_IMAGE is that system, pinned by digest, and
+# is where the first verify stage runs.
+ARG GLIBC_FLOOR=2.35
+ARG GLIBCXX_FLOOR=3.4.30
+ARG FLOOR_IMAGE=ubuntu:22.04@sha256:b8b6ee6aa931ecd9d0d952abc34dc0e5f7c6a30c6bb71b079fe399fde0329c02
+
+# ---------------------------------------------------------------- build ------
+FROM ${BASE_IMAGE} AS build
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_TYPE
+ARG VERSION
+ARG GLIBC_FLOOR
+ARG GLIBCXX_FLOOR
+# The Qt a release is built against — the same pinned version as the macOS and
+# Windows builds (scripts/build-targets.sh QT_VERSION) — fetched with a pinned
+# aqtinstall from Qt's own download servers. They carry Qt WebEngine, which is
+# what draws the Workbench and the Brain; the distributions' own Qt is too old
+# for it (Debian 12 has 6.4) or too new for the glibc floor. Which base image
+# each architecture needs for them is at the top of this file.
+ARG QT_VERSION=6.11.2
+ARG AQT_VERSION=3.3.0
+
+# patchelf is what rewrites every RUNPATH in the bundle to $ORIGIN, so the
+# result can be unpacked anywhere rather than only where it was built.
+#
+# The second list is what Qt's own libraries and Qt WebEngine link at run time.
+# They are installed here so scripts/bundle-linux.sh can find each one and
+# either carry it or, for the ones every desktop has, leave it to the host
+# (scripts/linux-host-libraries.txt). The last line is the arm64 Qt's alone:
+# it is built on Ubuntu 24.04 and its WebEngine links snappy, WebP, minizip and
+# Little CMS from the system, where the x86-64 one carries its own.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        build-essential ca-certificates cmake ninja-build git pkg-config \
+        patchelf binutils file python3 python3-venv \
+        libssl-dev libgl-dev libegl-dev libxkbcommon-dev libfontconfig-dev; \
+    t64=""; . /etc/os-release; [ "$ID" = "ubuntu" ] && t64="t64"; \
+    apt-get install -y --no-install-recommends \
+        "libglib2.0-0${t64}" libdbus-1-3 libfontconfig1 libfreetype6 libexpat1 \
+        libxkbcommon0 libxkbcommon-x11-0 libxkbfile1 \
+        libx11-6 libx11-xcb1 libxcb1 libxcb-cursor0 libxcb-glx0 libxcb-icccm4 \
+        libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+        libxcb-render0 libxcb-shape0 libxcb-shm0 libxcb-sync1 libxcb-util1 \
+        libxcb-xfixes0 libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 \
+        libxcomposite1 libxdamage1 libxrandr2 libxtst6 libxshmfence1 libxext6 \
+        libxi6 libxrender1 libxcursor1 libxinerama1 libsm6 libice6 \
+        libgl1 libegl1 libopengl0 libgbm1 libdrm2 \
+        libwayland-client0 libwayland-cursor0 libwayland-egl1 \
+        libnss3 libnspr4 "libasound2${t64}" "libcups2${t64}" libpulse0 \
+        libsnappy1v5 libwebp7 libwebpdemux2 libwebpmux3 "libminizip1${t64}" liblcms2-2; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY docker/aqt-7z-guard.py /opt/aqt-7z-guard.py
+RUN set -eux; \
+    python3 -m venv /opt/aqt; \
+    /opt/aqt/bin/pip install --no-cache-dir "aqtinstall==${AQT_VERSION}"; \
+    # aqt takes some 7z archives for zips on Python 3.12; see the file itself.
+    site="$(/opt/aqt/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"; \
+    mv /opt/aqt-7z-guard.py "${site}/aqt_7z_guard.py"; \
+    echo 'import aqt_7z_guard' > "${site}/aqt_7z_guard.pth"; \
+    case "$(dpkg --print-architecture)" in \
+        arm64) host=linux_arm64; arch=linux_gcc_arm64 ;; \
+        amd64) host=linux;       arch=linux_gcc_64 ;; \
+        *) echo "no Qt ${QT_VERSION} for $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac; \
+    modules="-m qtwebengine qtwebchannel qtpositioning qtimageformats qtshadertools qtserialport"; \
+    # Qt's download servers redirect to mirrors, and a mirror now and then
+    # hands back a truncated archive; a second attempt gets another mirror.
+    for attempt in 1 2 3; do \
+        rm -rf /opt/qt; \
+        /opt/aqt/bin/aqt install-qt "$host" desktop "$QT_VERSION" "$arch" $modules --outputdir /opt/qt && break; \
+        [ "$attempt" -lt 3 ] || exit 1; \
+        sleep 5; \
+    done; \
+    ln -s "$(find "/opt/qt/${QT_VERSION}" -mindepth 1 -maxdepth 1 -type d | head -1)" /opt/qt/current; \
+    /opt/qt/current/bin/qtpaths --query QT_VERSION
+
+# qtpaths on PATH is how scripts/bundle-linux.sh finds this Qt.
+ENV PATH=/opt/qt/current/bin:${PATH}
+
+# What lets an archive built here run on the floor system: it rewrites the few
+# references to a newer glibc after the build (scripts/bundle-linux.sh, "The
+# oldest system it runs on"). Built from a pinned commit, the one the floor was
+# measured and verified with; C and ninja only.
+ARG POLYFILL_GLIBC_COMMIT=e8107d6b05aab7dfe1f52ff3d362c15909cb03ff
+RUN set -eux; \
+    git clone --quiet https://github.com/corsix/polyfill-glibc.git /opt/polyfill-glibc; \
+    git -C /opt/polyfill-glibc checkout --quiet "${POLYFILL_GLIBC_COMMIT}"; \
+    ninja -C /opt/polyfill-glibc polyfill-glibc; \
+    ln -s /opt/polyfill-glibc/polyfill-glibc /usr/local/bin/polyfill-glibc
+
+WORKDIR /src
+COPY . .
+
+# Staged into /stage rather than installed over the image: what leaves here is
+# an archive somebody unpacks on their own machine, so the prefix has to be one
+# that survives being moved.
+RUN set -eux; \
+    cmake -S . -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+        -DCMAKE_PREFIX_PATH=/opt/qt/current \
+        -DSIMORG_BUILD_GUI=ON \
+        -DSIMORG_BUILD_WEBENGINE=ON \
+        -DSIMORG_ARCHIVE_BUILD=ON \
+        -DCMAKE_INSTALL_PREFIX=/usr; \
+    cmake --build build --parallel; \
+    DESTDIR=/stage cmake --install build
+
+# The step that makes the difference between an archive that runs and one that
+# only runs here. See scripts/bundle-linux.sh.
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    name="simorg-${VERSION}-linux-${arch}"; \
+    ./scripts/bundle-linux.sh \
+        --stage /stage/usr \
+        --out "/bundle/${name}" \
+        --qml-source /src/src/app/qml \
+        --glibc-floor "${GLIBC_FLOOR}" --glibcxx-floor "${GLIBCXX_FLOOR}" \
+        $([ "$BUILD_TYPE" = "Release" ] && echo --strip); \
+    mkdir -p /out; \
+    tar -C /bundle -czf "/out/${name}.tar.gz" "${name}"; \
+    cp "/bundle/${name}/MANIFEST.txt" /out/MANIFEST.txt; \
+    ( cd /out && sha256sum ./*.tar.gz > SHA256SUMS )
+
+# --------------------------------------------------------------- verify ------
+#
+# The floor system — the oldest one an archive claims to run on — with nothing
+# added to it but what a Linux desktop already has. No Qt, no -dev packages, no
+# build tools: if the archive needs something, or asks for a newer C library
+# than GLIBC_FLOOR, this is where it says so rather than on somebody's Raspberry
+# Pi three days later.
+#
+# Then again on Ubuntu 24.04, the Linux most people run and the one whose
+# AppArmor refuses the user namespaces Chromium's sandbox is built from. The
+# export stage pulls from there, so no artifact leaves without passing both.
+FROM ${FLOOR_IMAGE} AS verify
+
+ARG DEBIAN_FRONTEND=noninteractive
+# Loaded by each check that renders a page; our own site, so what it proves is
+# TLS and certificates, not somebody else's uptime. robots.txt rather than a
+# file on download.simorg.tech, whose contents come and go with releases, and
+# rather than the home page, which would run the site's scripts and count each
+# build as a visit.
+ARG VERIFY_WEB_URL=https://simorg.tech/robots.txt
+
+# What scripts/linux-host-libraries.txt leaves to the machine — the C library,
+# the C++ runtime, the graphics driver and the display server's own client
+# libraries — and nothing else. Beside them, only what the checks need to run:
+# a virtual display (xvfb, xauth, Mesa's software renderer) and fonts.
+#
+# The barest machine with a graphical session, then: WSL's Ubuntu, or a server
+# somebody reaches over ssh -X. No sound library — the launchers have to load
+# the one the bundle carries for such a machine — and none of the xcb-util
+# family, which the bundle carries outright and which Ubuntu 22.04 does not
+# install either. Were any of them here, the checks would find this image's
+# copy and prove nothing, so the step refuses to go on if a package pulled one in.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends coreutils; \
+    apt-get install -y --no-install-recommends \
+        libgl1 libegl1 libglx0 libopengl0 libgbm1 libdrm2 \
+        libx11-6 libx11-xcb1 libxcb1 libxcb-glx0 libxcb-randr0 libxcb-shm0 \
+        libxcb-sync1 libxcb-xfixes0 libsm6 libice6 libxi6 libxext6 \
+        libxrender1 libxfixes3 libxcomposite1 libxdamage1 libxrandr2 \
+        libxtst6 libxshmfence1 \
+        libwayland-client0 libwayland-cursor0 libwayland-egl1 \
+        fontconfig-config fonts-dejavu-core \
+        xvfb xauth libgl1-mesa-dri; \
+    for lib in libxcb-cursor.so.0 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-keysyms.so.1 \
+               libxcb-render-util.so.0 libxcb-render.so.0 libxcb-shape.so.0 libxcb-util.so.1 \
+               libxcb-xkb.so.1 libasound.so.2; do \
+        if ldconfig -p | grep -q "${lib} ("; then echo "the floor image has ${lib}" >&2; exit 1; fi; \
+    done; \
+    rm -rf /var/lib/apt/lists/*; \
+    useradd --create-home verifier
+
+COPY --from=build /out /out
+COPY scripts/verify-linux-bundle.sh scripts/linux-host-libraries.txt /verify/
+
+# As an ordinary user: that is who runs the app, and a check run as root would
+# only prove Chromium's root rule.
+USER verifier
+RUN set -eux; \
+    unpacked="$(mktemp -d)"; \
+    tar -C "$unpacked" -xzf /out/*.tar.gz; \
+    SIMORG_VERIFY_WEB_URL="$VERIFY_WEB_URL" \
+        /verify/verify-linux-bundle.sh "$(find "$unpacked" -maxdepth 1 -mindepth 1 -type d)"; \
+    rm -rf "$unpacked"
+USER root
+
+# ---------------------------------------------------------- verify-ubuntu ------
+FROM ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3 AS verify-ubuntu
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG VERIFY_WEB_URL=https://simorg.tech/robots.txt
+
+# The floor's list and the sound library every desktop has, so that here the
+# launchers have to pick this system's libasound over the one the bundle
+# carries — the other half of what the floor proves.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends coreutils; \
+    apt-get install -y --no-install-recommends \
+        libgl1 libegl1 libglx0 libopengl0 libgbm1 libdrm2 \
+        libx11-6 libx11-xcb1 libxcb1 libxcb-glx0 libxcb-randr0 libxcb-shm0 \
+        libxcb-sync1 libxcb-xfixes0 libsm6 libice6 libxi6 libxext6 \
+        libxrender1 libxfixes3 libxcomposite1 libxdamage1 libxrandr2 \
+        libxtst6 libxshmfence1 \
+        libwayland-client0 libwayland-cursor0 libwayland-egl1 \
+        libasound2t64 fontconfig-config fonts-dejavu-core \
+        xvfb xauth libgl1-mesa-dri; \
+    rm -rf /var/lib/apt/lists/*; \
+    useradd --create-home verifier
+
+COPY --from=verify /out /out
+COPY scripts/verify-linux-bundle.sh scripts/linux-host-libraries.txt /verify/
+
+USER verifier
+RUN set -eux; \
+    unpacked="$(mktemp -d)"; \
+    tar -C "$unpacked" -xzf /out/*.tar.gz; \
+    SIMORG_VERIFY_WEB_URL="$VERIFY_WEB_URL" \
+        /verify/verify-linux-bundle.sh "$(find "$unpacked" -maxdepth 1 -mindepth 1 -type d)"; \
+    rm -rf "$unpacked"
+USER root
+
+# --------------------------------------------------------------- export ------
+FROM scratch AS export
+COPY --from=verify-ubuntu /out/ /

@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Simorg
+//
+// A Windows program's own resources: its icon and what Explorer, Task Manager
+// and Apps & Features say about it. Configured per program by
+// cmake/SimorgWindowsResources.cmake; see there.
+
+#include <winver.h>
+
+// The name Qt looks for: a window with no icon of its own is given this one,
+// so the title bar, the taskbar and Alt+Tab show it without the app asking.
+// Explorer, the Start menu shortcut and Apps & Features read the same icon.
+IDI_ICON1 ICON "@SIMORG_RC_ICON@"
+
+VS_VERSION_INFO VERSIONINFO
+    FILEVERSION     @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+    PRODUCTVERSION  @PROJECT_VERSION_MAJOR@,@PROJECT_VERSION_MINOR@,@PROJECT_VERSION_PATCH@,0
+    FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+    FILEFLAGS       @SIMORG_RC_FLAGS@
+    FILEOS          VOS_NT_WINDOWS32
+    FILETYPE        VFT_APP
+    FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "Simorg Oy"
+            // What Task Manager lists the running program as.
+            VALUE "FileDescription",  "@SIMORG_RC_DESCRIPTION@"
+            VALUE "FileVersion",      "@PROJECT_VERSION@"
+            VALUE "InternalName",     "@SIMORG_RC_NAME@"
+            VALUE "LegalCopyright",   "Copyright (C) 2026 Simorg. Licensed GPL-3.0-or-later."
+            VALUE "OriginalFilename", "@SIMORG_RC_NAME@.exe"
+            VALUE "ProductName",      "Simorg Desktop"
+            VALUE "ProductVersion",   "@PROJECT_VERSION@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
